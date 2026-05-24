@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sheet Metal Bend Calculator — by Mechanical Design Engineer</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0A0E1A;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --accent: #FF7820;
+    --accent2: rgba(255,120,32,0.12);
+    --accent3: rgba(255,120,32,0.25);
+    --text: #F0EDE8;
+    --text2: rgba(240,237,232,0.55);
+    --text3: rgba(240,237,232,0.3);
+    --green: #1D9E75;
+    --green-bg: rgba(29,158,117,0.1);
+    --blue: #378ADD;
+    --blue-bg: rgba(55,138,221,0.1);
+    --red: #E24B4A;
+    --red-bg: rgba(226,75,74,0.1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* grid bg */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,120,32,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,120,32,0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  /* ── HEADER ── */
+  header { margin-bottom: 40px; }
+  .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
+  .chip {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid var(--accent3);
+    padding: 5px 14px;
+    border-radius: 2px;
+  }
+  .version { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; }
+
+  .hero-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(52px, 9vw, 84px);
+    letter-spacing: 0.04em;
+    line-height: 0.9;
+    color: var(--text);
+    margin-bottom: 16px;
+  }
+  .hero-title span { color: var(--accent); }
+
+  .hero-sub {
+    font-size: 14px;
+    color: var(--text2);
+    max-width: 540px;
+    line-height: 1.65;
+  }
+
+  .author-card {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 40px;
+    padding: 8px 18px 8px 8px;
+    margin-top: 20px;
+  }
+  .author-avatar {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600; font-size: 12px; color: #fff;
+    flex-shrink: 0;
+  }
+  .author-info { line-height: 1.3; }
+  .author-name { font-size: 13px; font-weight: 500; color: var(--text); }
+  .author-role { font-size: 11px; color: var(--text3); }
+
+  .divider { width: 100%; height: 1px; background: linear-gradient(90deg, var(--accent) 0%, rgba(255,120,32,0.15) 50%, transparent 100%); margin: 32px 0; }
+
+  /* ── SECTION LABEL ── */
+  .s-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .s-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* ── MATERIAL PRESETS ── */
+  .mat-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+  .mat-btn {
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 99px;
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .mat-btn:hover { border-color: var(--accent3); color: var(--text); }
+  .mat-btn.active { background: var(--accent2); border-color: var(--accent); color: var(--accent); }
+
+  /* ── INPUTS ── */
+  .input-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 28px; }
+  .field { display: flex; flex-direction: column; gap: 7px; }
+  .field label {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text3);
+    font-family: 'DM Mono', monospace;
+  }
+  .field input, .field select {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-size: 15px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.15s;
+    -moz-appearance: textfield;
+  }
+  .field input::-webkit-outer-spin-button,
+  .field input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .field input:focus, .field select:focus { border-color: var(--accent); }
+  .field select option { background: var(--surface); }
+
+  /* ── RESULTS ── */
+  .results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 28px; }
+  .metric {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .metric.primary { border-color: var(--accent3); }
+  .metric.primary::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--accent); }
+  .metric.ok { border-color: rgba(29,158,117,0.3); }
+  .metric.ok::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--green); }
+  .m-label { font-size: 11px; color: var(--text3); letter-spacing: 0.04em; margin-bottom: 8px; line-height: 1.4; }
+  .m-val { font-family: 'DM Mono', monospace; font-size: 22px; font-weight: 500; color: var(--text); line-height: 1; }
+  .metric.primary .m-val { color: var(--accent); }
+  .metric.ok .m-val { color: var(--green); }
+  .m-unit { font-size: 11px; color: var(--text3); margin-top: 5px; }
+
+  /* ── FORMULA BREAKDOWN ── */
+  .formula-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 28px; }
+  @media (max-width: 520px) { .formula-grid { grid-template-columns: 1fr; } }
+  .formula-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .f-label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; font-family: 'DM Mono', monospace; }
+  .f-eq { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text2); line-height: 1.7; }
+  .f-eq .hi { color: var(--text); font-weight: 500; }
+  .f-eq .res { color: var(--accent); font-weight: 500; }
+
+  /* ── NOTICE / WARNINGS ── */
+  .notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    margin-bottom: 28px;
+    border: 1px solid;
+    line-height: 1.6;
+  }
+  .notice.info { background: var(--blue-bg); border-color: rgba(55,138,221,0.2); color: #85B7EB; }
+  .notice.warn { background: rgba(239,159,39,0.08); border-color: rgba(239,159,39,0.2); color: #FAC775; }
+  .notice.good { background: var(--green-bg); border-color: rgba(29,158,117,0.2); color: #5DCAA5; }
+  .notice.bad  { background: var(--red-bg);  border-color: rgba(226,75,74,0.2);   color: #F09595; }
+  .notice-icon { font-size: 16px; flex-shrink: 0; margin-top: 2px; }
+
+  /* ── REFERENCE TABLE ── */
+  .ref-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-bottom: 28px;
+  }
+  .ref-table thead th {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .ref-table tbody td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text2);
+  }
+  .ref-table tbody tr:last-child td { border-bottom: none; }
+  .ref-table tbody tr:hover td { background: var(--surface2); }
+  .ref-table .k-val { font-family: 'DM Mono', monospace; color: var(--accent); font-weight: 500; }
+  .bar-wrap { width: 80px; height: 4px; background: var(--border2); border-radius: 2px; overflow: hidden; display: inline-block; vertical-align: middle; }
+  .bar-fill { height: 100%; background: var(--accent); border-radius: 2px; opacity: 0.7; }
+
+  /* ── FOOTER ── */
+  footer {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .footer-left { }
+  .footer-brand { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 0.06em; color: var(--text); }
+  .footer-brand span { color: var(--accent); }
+  .footer-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
+  .footer-tags { font-size: 11px; color: var(--accent3); font-family: 'DM Mono', monospace; }
+  .footer-right { text-align: right; }
+  .footer-note { font-size: 11px; color: var(--text3); line-height: 1.6; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    .top-bar { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .results-grid { grid-template-columns: 1fr 1fr; }
+    footer { flex-direction: column; }
+    .footer-right { text-align: left; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <header>
+    <div class="top-bar">
+      <div class="chip">Sheet Metal Engineering Tool</div>
+      <div class="version">v1.0 · Based on KETIV AVA Unfold Rules</div>
+    </div>
+    <h1 class="hero-title">SHEET METAL<br><span>BEND</span> CALCULATOR</h1>
+    <p class="hero-sub">Enter your thickness, inside radius, bend angle and flange lengths — get instant flat blank length, bend allowance, bend deduction and more. Based on standard K-Factor and Bend Deduction equations.</p>
+    <div class="author-card">
+      <div class="author-avatar">ME</div>
+      <div class="author-info">
+        <div class="author-name">Mechanical Design Engineer</div>
+        <div class="author-role">SPM &amp; Automation · CATIA V5 · 6+ Years Experience</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="divider"></div>
+
+  <!-- MATERIAL PRESETS -->
+  <div class="s-label">Material preset — sets K-Factor automatically</div>
+  <div class="mat-row" id="matRow">
+    <button class="mat-btn" onclick="setMat(this, 0.35)">Soft Brass / Soft Copper</button>
+    <button class="mat-btn active" onclick="setMat(this, 0.407)">Soft Steel / Aluminium</button>
+    <button class="mat-btn" onclick="setMat(this, 0.44)">Cold-Rolled Steel (Lockheed)</button>
+    <button class="mat-btn" onclick="setMat(this, 0.452)">Bronze / Hard Copper / Spring Steel</button>
+    <button class="mat-btn" onclick="setMat(this, null)">Custom K-Factor</button>
+  </div>
+
+  <!-- INPUTS -->
+  <div class="s-label">Inputs</div>
+  <div class="input-grid">
+    <div class="field">
+      <label>Thickness T (mm)</label>
+      <input type="number" id="T" value="2" min="0.1" step="0.1" oninput="calc()">
+    </div>
+    <div class="field">
+      <label>Inside Radius Ri (mm)</label>
+      <input type="number" id="Ri" value="3" min="0" step="0.5" oninput="calc()">
+    </div>
+    <div class="field">
+      <label>Bend Angle α (°)</label>
+      <input type="number" id="alpha" value="90" min="1" max="179" step="1" oninput="calc()">
+    </div>
+    <div class="field">
+      <label>Flange 1 — L1 (mm)</label>
+      <input type="number" id="L1" value="50" min="0" step="1" oninput="calc()">
+    </div>
+    <div class="field">
+      <label>Flange 2 — L2 (mm)</label>
+      <input type="number" id="L2" value="50" min="0" step="1" oninput="calc()">
+    </div>
+    <div class="field">
+      <label>K-Factor</label>
+      <input type="number" id="K" value="0.407" min="0" max="2" step="0.001" oninput="onKChange()">
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="s-label">Calculated results</div>
+  <div class="results-grid">
+    <div class="metric primary">
+      <div class="m-label">Flat Blank Length (L)</div>
+      <div class="m-val" id="rL">—</div>
+      <div class="m-unit">mm · L1 + Ln + L2</div>
+    </div>
+    <div class="metric ok">
+      <div class="m-label">Bend Allowance (Ln)</div>
+      <div class="m-val" id="rLn">—</div>
+      <div class="m-unit">mm · arc of neutral line</div>
+    </div>
+    <div class="metric">
+      <div class="m-label">Bend Deduction (LBD)</div>
+      <div class="m-val" id="rLBD">—</div>
+      <div class="m-unit">mm · 2·SBout − Ln</div>
+    </div>
+    <div class="metric">
+      <div class="m-label">Neutral Radius (Rn)</div>
+      <div class="m-val" id="rRn">—</div>
+      <div class="m-unit">mm · Ri + K·T</div>
+    </div>
+    <div class="metric">
+      <div class="m-label">Outside Set Back</div>
+      <div class="m-val" id="rSB">—</div>
+      <div class="m-unit">mm · tan(α/2)·(Ri+T)</div>
+    </div>
+    <div class="metric">
+      <div class="m-label">Opening Angle (β)</div>
+      <div class="m-val" id="rBeta">—</div>
+      <div class="m-unit">degrees · 180° − α</div>
+    </div>
+    <div class="metric">
+      <div class="m-label">Bend Compensation (V)</div>
+      <div class="m-val" id="rV">—</div>
+      <div class="m-unit">mm · DIN 6935 = −LBD</div>
+    </div>
+    <div class="metric">
+      <div class="m-label">Ri / T Ratio</div>
+      <div class="m-val" id="rRatio">—</div>
+      <div class="m-unit">DIN KDIN reference</div>
+    </div>
+  </div>
+
+  <!-- NOTICE -->
+  <div class="notice info" id="noticeBox">
+    <span class="notice-icon">ℹ</span>
+    <span id="noticeText">Enter your values above to see results and design notes.</span>
+  </div>
+
+  <!-- FORMULA BREAKDOWN -->
+  <div class="s-label">Live formula breakdown</div>
+  <div class="formula-grid">
+    <div class="formula-box">
+      <div class="f-label">Bend Allowance (Ln)</div>
+      <div class="f-eq" id="fBA">Ln = α·π/180 · (Ri + K·T)</div>
+    </div>
+    <div class="formula-box">
+      <div class="f-label">Flat Blank Length (L)</div>
+      <div class="f-eq" id="fFL">L = L1 + Ln + L2</div>
+    </div>
+    <div class="formula-box">
+      <div class="f-label">Outside Set Back</div>
+      <div class="f-eq" id="fSB">SBout = tan(α/2) · (Ri + T)</div>
+    </div>
+    <div class="formula-box">
+      <div class="f-label">Bend Deduction (LBD)</div>
+      <div class="f-eq" id="fBD">LBD = 2·SBout − Ln</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- K-FACTOR REFERENCE TABLE -->
+  <div class="s-label">K-Factor reference table — Machinery's Handbook</div>
+  <table class="ref-table">
+    <thead>
+      <tr>
+        <th>Material</th>
+        <th>K-Factor</th>
+        <th>Bend Allowance formula (90°)</th>
+        <th>Scale</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Soft Brass, Soft Copper</td>
+        <td class="k-val">0.35</td>
+        <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3)">Ln = (0.55·T) + (1.57·Ri)</td>
+        <td><div class="bar-wrap"><div class="bar-fill" style="width:35%"></div></div></td>
+      </tr>
+      <tr>
+        <td>Half-Hard Copper &amp; Brass, Soft Steel, Aluminium</td>
+        <td class="k-val">0.407</td>
+        <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3)">Ln = (0.64·T) + (1.57·Ri)</td>
+        <td><div class="bar-wrap"><div class="bar-fill" style="width:40.7%"></div></div></td>
+      </tr>
+      <tr>
+        <td>Cold-Rolled Steel, Spring Steel (Lockheed default)</td>
+        <td class="k-val">0.44</td>
+        <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3)">Lockheed: α·(0.017453·Ri + 0.0078·T)</td>
+        <td><div class="bar-wrap"><div class="bar-fill" style="width:44%"></div></div></td>
+      </tr>
+      <tr>
+        <td>Bronze, Hard Copper, Spring Steel</td>
+        <td class="k-val">0.452</td>
+        <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3)">Ln = (0.71·T) + (1.57·Ri)</td>
+        <td><div class="bar-wrap"><div class="bar-fill" style="width:45.2%"></div></div></td>
+      </tr>
+      <tr>
+        <td>DIN 6935 · Ri/T ≥ 5</td>
+        <td class="k-val">KDIN = 1.0</td>
+        <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3)">KDIN = 0.65 + 0.5·log(Ri/T) for 0.05 ≤ Ri/T ≤ 5</td>
+        <td><div class="bar-wrap"><div class="bar-fill" style="width:100%"></div></div></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- KEY RULES -->
+  <div class="s-label">Key design rules to remember</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-bottom:32px;">
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;">
+      <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);font-family:'DM Mono',monospace;margin-bottom:8px;">Rule 01</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;"><strong style="color:var(--text);">Bend Allowance ≠ Bend Deduction.</strong> These are often confused on shop floors. BA = arc length of neutral axis. BD = amount to subtract from virtual sharp dimensions.</div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;">
+      <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);font-family:'DM Mono',monospace;margin-bottom:8px;">Rule 02</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;"><strong style="color:var(--text);">K-Factor range 0–1.</strong> K = 0 = neutral axis at inside surface. K = 0.5 = true mid-thickness. In practice, most metals fall between 0.3 and 0.5.</div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;">
+      <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);font-family:'DM Mono',monospace;margin-bottom:8px;">Rule 03</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;"><strong style="color:var(--text);">Bend Angle α vs Opening Angle β.</strong> α is the outside angle (what CAD uses). β = 180° − α. Mixing these up causes flat pattern errors.</div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;">
+      <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);font-family:'DM Mono',monospace;margin-bottom:8px;">Rule 04</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;"><strong style="color:var(--text);">For highest accuracy — use measured BD tables.</strong> K-Factors are approximations. Manufacturer-generated Bend Deduction Tables from real test bends are the shop-floor gold standard.</div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;">
+      <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);font-family:'DM Mono',monospace;margin-bottom:8px;">Rule 05</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;"><strong style="color:var(--text);">Virtual Sharp is your measurement reference.</strong> The exact bend line can't be measured physically. Always measure flanges to their virtual sharp intersection point.</div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;">
+      <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);font-family:'DM Mono',monospace;margin-bottom:8px;">Rule 06</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;"><strong style="color:var(--text);">DIN 6935 KDIN ≠ Standard K-Factor.</strong> KDIN is used only inside the DIN Bend Compensation formula. It is not interchangeable with K-Factor in the standard Bend Allowance equation.</div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-left">
+      <div class="footer-brand">BEND <span>CALC</span></div>
+      <div class="footer-sub">Mechanical Design Engineer · SPM &amp; Automation · CATIA V5 · Fusion 360 · AutoCAD</div>
+      <div class="footer-tags" style="margin-top:8px;">#SheetMetal &nbsp;#CATIAV5 &nbsp;#MechanicalEngineering &nbsp;#SPMDesign &nbsp;#Manufacturing</div>
+    </div>
+    <div class="footer-right">
+      <div class="footer-note">Formulas sourced from KETIV AVA Unfold Rules v1.0<br>Machinery's Handbook 26th Ed. · DIN 6935 (Oct 1975)<br>For production use, verify with measured test bends.</div>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  let customK = false;
+
+  function setMat(btn, k) {
+    document.querySelectorAll('.mat-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    if (k !== null) {
+      customK = false;
+      document.getElementById('K').value = k;
+    } else {
+      customK = true;
+    }
+    calc();
+  }
+
+  function onKChange() {
+    customK = true;
+    document.querySelectorAll('.mat-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.mat-btn')[4].classList.add('active');
+    calc();
+  }
+
+  function g(id) { return parseFloat(document.getElementById(id).value) || 0; }
+  function fmt(n, d) { return isNaN(n) ? '—' : n.toFixed(d !== undefined ? d : 3); }
+  function setEl(id, val) { document.getElementById(id).textContent = val; }
+
+  function calc() {
+    const T = g('T'), Ri = g('Ri'), alpha = g('alpha'), L1 = g('L1'), L2 = g('L2'), K = g('K');
+
+    if (T <= 0 || alpha <= 0 || alpha >= 180) return;
+
+    const aRad = alpha * Math.PI / 180;
+    const beta = 180 - alpha;
+    const Rn = Ri + K * T;
+    const Ln = aRad * Rn;
+    const SBout = alpha <= 90 ? Math.tan(aRad / 2) * (Ri + T) : (Ri + T);
+    const LBD = 2 * SBout - Ln;
+    const L = L1 + L2 + Ln;
+    const V = -LBD;
+    const ratio = T > 0 ? Ri / T : 0;
+
+    setEl('rL',     fmt(L, 3));
+    setEl('rLn',    fmt(Ln, 3));
+    setEl('rLBD',   fmt(LBD, 3));
+    setEl('rRn',    fmt(Rn, 3));
+    setEl('rSB',    fmt(SBout, 3));
+    setEl('rBeta',  fmt(beta, 1));
+    setEl('rV',     fmt(V, 3));
+    setEl('rRatio', fmt(ratio, 2));
+
+    document.getElementById('fBA').innerHTML =
+      `Ln = <span class="hi">${fmt(aRad,4)}</span> × (<span class="hi">${fmt(Ri,2)}</span> + <span class="hi">${fmt(K,3)}</span>×<span class="hi">${fmt(T,2)}</span>) = <span class="res">${fmt(Ln,3)} mm</span>`;
+
+    document.getElementById('fFL').innerHTML =
+      `L = <span class="hi">${fmt(L1,2)}</span> + <span class="hi">${fmt(Ln,3)}</span> + <span class="hi">${fmt(L2,2)}</span> = <span class="res">${fmt(L,3)} mm</span>`;
+
+    document.getElementById('fSB').innerHTML = alpha <= 90
+      ? `SBout = tan(<span class="hi">${fmt(alpha/2,1)}°</span>) × (<span class="hi">${fmt(Ri,2)}</span>+<span class="hi">${fmt(T,2)}</span>) = <span class="res">${fmt(SBout,3)} mm</span>`
+      : `SBout = Ri+T = <span class="hi">${fmt(Ri,2)}</span>+<span class="hi">${fmt(T,2)}</span> = <span class="res">${fmt(SBout,3)} mm</span>`;
+
+    document.getElementById('fBD').innerHTML =
+      `LBD = 2×<span class="hi">${fmt(SBout,3)}</span> − <span class="hi">${fmt(Ln,3)}</span> = <span class="res">${fmt(LBD,3)} mm</span>`;
+
+    // Notice logic
+    const nb = document.getElementById('noticeBox');
+    const nt = document.getElementById('noticeText');
+    nb.className = 'notice';
+
+    if (ratio < 0.05 && T > 0) {
+      nb.classList.add('bad');
+      nt.textContent = `⚠ Very tight bend: Ri/T = ${fmt(ratio,2)} (< 0.05). High risk of cracking or fracturing at the bend. Consider a larger inside radius.`;
+    } else if (ratio > 5) {
+      nb.classList.add('warn');
+      nt.textContent = `Note: Ri/T = ${fmt(ratio,2)} (> 5). DIN 6935 sets KDIN = 1.0 in this range. Large-radius bends behave differently — verify with test bends.`;
+    } else if (LBD < 0) {
+      nb.classList.add('info');
+      nt.textContent = `Negative bend deduction (${fmt(LBD,3)} mm) — blank is longer than the virtual sharp sum. Normal for large-radius, small-angle bends.`;
+    } else {
+      nb.classList.add('good');
+      nt.textContent = `✓ All values within normal range. Flat blank length = ${fmt(L,3)} mm. Ri/T ratio = ${fmt(ratio,2)}. Ready to cut.`;
+    }
+  }
+
+  calc();
+</script>
+</body>
+</html>
